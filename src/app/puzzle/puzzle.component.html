@@ -1,0 +1,288 @@
+<section class="game-shell" aria-labelledby="game-title">
+  <div class="game-panel">
+    <header class="game-header">
+      <div class="title-stack">
+        <p class="eyebrow mb-1">Classic Sliding Puzzle</p>
+        <h1 id="game-title" class="game-title mb-0">Game of Fifteen</h1>
+        <p class="game-meta mb-0" aria-label="Current puzzle setup">
+          <span>{{ boardSize() }}×{{ boardSize() }}</span>
+          <span>{{ difficultyLabel() }}</span>
+          @if (isDailyPuzzle()) {
+            <span>Daily Puzzle</span>
+          }
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button
+          type="button"
+          class="btn btn-primary new-game-button"
+          aria-label="Start a new puzzle"
+          (click)="newGame()"
+        >
+          <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+          <span>New Game</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="game-layout">
+      <section class="board-stage" aria-label="Puzzle play area">
+        <div class="board-wrap">
+          <div class="tray-shadow" aria-hidden="true"></div>
+          <div
+            class="puzzle-board"
+            role="grid"
+            tabindex="0"
+            aria-describedby="board-help progress-label"
+            [attr.aria-label]="boardSize() + ' by ' + boardSize() + ' sliding puzzle board'"
+            [class.is-complete]="isSolved()"
+            [class.is-invalid-move]="boardInvalid()"
+            [style.--grid-size]="boardSize()"
+          >
+            <p id="board-help" class="visually-hidden">Use arrow keys on the board, or activate a highlighted tile to slide it.</p>
+
+            <div
+              class="empty-space"
+              aria-hidden="true"
+              [style.--empty-row]="emptyRow()"
+              [style.--empty-col]="emptyCol()"
+            ></div>
+
+            @for (tile of tiles(); track trackTile($index, tile)) {
+              <button
+                type="button"
+                class="tile"
+                role="gridcell"
+                [class.is-solved-position]="tile.solved"
+                [class.is-movable]="tile.movable"
+                [class.is-invalid-feedback]="tile.invalid"
+                [class.is-just-correct]="tile.justCorrect"
+                [style.--tile-row]="tile.row"
+                [style.--tile-col]="tile.col"
+                [attr.aria-label]="tileAriaLabel(tile)"
+                [attr.aria-disabled]="isSolved() || !tile.movable"
+                [disabled]="isSolved()"
+                (click)="moveTileByValue(tile.value)"
+              >
+                <span>{{ tile.value }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="progress-panel" aria-labelledby="progress-label" aria-live="polite">
+          <div class="progress-copy">
+            <span id="progress-label">Correct tiles</span>
+            <strong>{{ correctCount() }} / {{ targetTileCount() }}</strong>
+          </div>
+          <div
+            class="progress premium-progress"
+            role="progressbar"
+            [attr.aria-valuenow]="correctCount()"
+            aria-valuemin="0"
+            [attr.aria-valuemax]="targetTileCount()"
+          >
+            <div class="progress-bar" [style.width.%]="progressPercent()"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="game-sidebar" aria-label="Game status and settings">
+        <section class="status-card" aria-label="Game stats" aria-live="polite">
+          <div class="stat-item stat-primary">
+            <i class="fa-regular fa-clock stat-icon" aria-hidden="true"></i>
+            <span class="stat-copy">
+              <span class="stat-label">Time</span>
+              <strong>{{ formatTime(elapsedSeconds()) }}</strong>
+            </span>
+          </div>
+
+          <div class="stat-item stat-primary">
+            <i class="fa-solid fa-shoe-prints stat-icon" aria-hidden="true"></i>
+            <span class="stat-copy">
+              <span class="stat-label">Moves</span>
+              <strong>{{ moves() }}</strong>
+            </span>
+          </div>
+
+          <div class="stat-item">
+            <i class="fa-solid fa-trophy stat-icon" aria-hidden="true"></i>
+            <span class="stat-copy">
+              <span class="stat-label">Best Time</span>
+              <strong>{{ formatTime(bestTime()) }}</strong>
+            </span>
+          </div>
+
+          <div class="stat-item">
+            <i class="fa-solid fa-medal stat-icon" aria-hidden="true"></i>
+            <span class="stat-copy">
+              <span class="stat-label">Best Moves</span>
+              <strong>{{ bestMoves() ?? '--' }}</strong>
+            </span>
+          </div>
+        </section>
+
+        <section class="settings-card" aria-label="Puzzle settings">
+          <div class="settings-header">
+            <span>
+              <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+              Setup
+            </span>
+            <button type="button" class="daily-button" aria-label="Start today's daily puzzle" (click)="startDailyPuzzle()">
+              <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
+              Daily
+            </button>
+          </div>
+
+          <div class="control-group">
+            <span class="control-label" id="board-size-label">Board</span>
+            <div class="segmented-control" role="group" aria-labelledby="board-size-label">
+              @for (size of boardSizes; track size) {
+                <button
+                  type="button"
+                  class="segment-button"
+                  [class.is-active]="boardSize() === size"
+                  [attr.aria-pressed]="boardSize() === size"
+                  [attr.aria-label]="'Use ' + size + ' by ' + size + ' board'"
+                  (click)="selectBoardSize(size)"
+                >
+                  {{ size }}×{{ size }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="control-group">
+            <span class="control-label" id="difficulty-label">Difficulty</span>
+            <div class="segmented-control difficulty-control" role="group" aria-labelledby="difficulty-label">
+              @for (option of difficultyOptions; track option.value) {
+                <button
+                  type="button"
+                  class="segment-button"
+                  [class.is-active]="difficulty() === option.value"
+                  [attr.aria-pressed]="difficulty() === option.value"
+                  [attr.aria-label]="'Use ' + option.label + ' difficulty'"
+                  (click)="selectDifficulty(option.value)"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  @if (showRestartWarning()) {
+    <div class="modal-backdrop fade show premium-backdrop"></div>
+    <div
+      class="modal fade show restart-modal"
+      tabindex="-1"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="restart-warning-title"
+      aria-describedby="restart-warning-copy"
+      style="display: block"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content restart-content">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <p class="eyebrow mb-1">Unsaved Progress</p>
+              <h2 id="restart-warning-title" class="modal-title mb-0">
+                <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                Start a new puzzle?
+              </h2>
+            </div>
+            <button type="button" class="btn-close" aria-label="Cancel" (click)="cancelRestart()"></button>
+          </div>
+
+          <div class="modal-body">
+            <p id="restart-warning-copy" class="victory-copy mb-0">
+              Your current puzzle will end and your progress will be lost.
+            </p>
+          </div>
+
+          <div class="modal-footer border-0 pt-0 restart-actions">
+            <button type="button" class="btn btn-outline-secondary" (click)="cancelRestart()">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              No, keep playing
+            </button>
+            <button #confirmRestartButton type="button" class="btn btn-primary" (click)="confirmRestart()">
+              <i class="fa-solid fa-check" aria-hidden="true"></i>
+              Yes, start over
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (showVictory()) {
+    <div class="modal-backdrop fade show premium-backdrop"></div>
+    <div
+      class="modal fade show victory-modal"
+      tabindex="-1"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="victory-title"
+      aria-describedby="victory-summary"
+      style="display: block"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content victory-content">
+          <div class="celebration-burst" aria-hidden="true"></div>
+
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <p class="eyebrow mb-1">Puzzle Complete</p>
+              <h2 id="victory-title" class="modal-title mb-0">
+                <i class="fa-solid fa-crown" aria-hidden="true"></i>
+                Puzzle Complete!
+              </h2>
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" (click)="closeVictory()"></button>
+          </div>
+
+          <div class="modal-body">
+            <p id="victory-summary" class="victory-copy">
+              You restored the {{ boardSize() }}×{{ boardSize() }} board in
+              <strong>{{ moves() }}</strong> moves and <strong>{{ formatTime(elapsedSeconds()) }}</strong>.
+            </p>
+
+            <div class="victory-stats">
+              <div>
+                <span>Final Time</span>
+                <strong>{{ formatTime(elapsedSeconds()) }}</strong>
+              </div>
+              <div>
+                <span>Total Moves</span>
+                <strong>{{ moves() }}</strong>
+              </div>
+            </div>
+
+            @if (newBestMoves() || newBestTime()) {
+              <p class="best-badge mb-0">
+                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                New best {{ newBestMoves() && newBestTime() ? 'moves and time' : newBestMoves() ? 'moves' : 'time' }}.
+              </p>
+            }
+          </div>
+
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-outline-secondary" (click)="shareResult()">
+              <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+              Share Result
+            </button>
+            <button #playAgainButton type="button" class="btn btn-primary" (click)="newGame()">
+              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+              Play Again
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</section>

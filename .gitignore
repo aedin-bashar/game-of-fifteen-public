@@ -427,3 +427,15 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Angular / Node build output
+dist/
+.angular/
+coverage/
+tmp/
+out-tsc/
+
+# Local browser testing artifacts
+chrome-profile*/
+chrome-cdp-profile/
+qa*.png

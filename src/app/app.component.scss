@@ -1,0 +1,57 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.site-footer {
+  border-top: 1px solid rgba(36, 55, 75, 0.12);
+  color: rgba(20, 32, 51, 0.74);
+  display: grid;
+  gap: 0.65rem;
+  justify-items: center;
+  padding: 1.35rem 1rem clamp(1.35rem, 4vw, 2rem);
+  text-align: center;
+}
+
+.copyright {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.social-links {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: center;
+}
+
+.social-links a {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.64);
+  border: 1px solid rgba(36, 55, 75, 0.12);
+  border-radius: 999px;
+  color: #34445a;
+  display: inline-flex;
+  font-size: 1.08rem;
+  height: 2.45rem;
+  justify-content: center;
+  text-decoration: none;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+  width: 2.45rem;
+}
+
+.social-links a:hover,
+.social-links a:focus-visible {
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(26, 42, 60, 0.12);
+  color: #174ec9;
+  transform: translateY(-1px);
+}
+
+.social-links a:focus-visible {
+  outline: 4px solid rgba(35, 103, 246, 0.28);
+  outline-offset: 3px;
+}
